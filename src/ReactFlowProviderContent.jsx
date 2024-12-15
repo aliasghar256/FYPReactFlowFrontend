@@ -59,25 +59,27 @@ const Content = () => {
   const updateNodePath = (currentEdges) => {
     const path = [];
     const visited = new Set();
-
-    const startNodes = nodes.filter(
-      (node) =>
-        !currentEdges.some((edge) => edge.target === node.id)
+  
+    // Start traversal only from nodes that are sources in the edges
+    const startNodes = nodes.filter((node) =>
+      currentEdges.some((edge) => edge.source === node.id)
     );
-
+  
     const traverse = (nodeId) => {
       if (visited.has(nodeId)) return;
       visited.add(nodeId);
       path.push(nodeId);
-
+  
+      // Traverse to connected nodes
       currentEdges
         .filter((edge) => edge.source === nodeId)
         .forEach((edge) => traverse(edge.target));
     };
-
+  
     startNodes.forEach((node) => traverse(node.id));
     setNodePath(path);
   };
+  
 
   const onDrop = (event) => {
     event.preventDefault();

@@ -111,7 +111,7 @@ const Content = () => {
         description: nodes.find((n) => n.id === nodeId)?.data.label || "",
       })),
     };
-
+    console.log("Payload:", payload);
     try {
       const response = await axios.post(
         "http://127.0.0.1:5000/playbook/execute",

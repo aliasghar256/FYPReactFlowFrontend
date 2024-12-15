@@ -19,8 +19,8 @@ const Content = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [availableBlocks, setAvailableBlocks] = useState([]);
+  const [nodePath, setNodePath] = useState([]); // Ordered list of connected nodes
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
-
   const ref = useRef(null);
 
   // Fetch blocks (nodes) from the API
@@ -31,7 +31,6 @@ const Content = () => {
       );
       const { plays } = response.data;
 
-      // Map plays array into draggable blocks
       const blocks = plays.map((play, index) => ({
         id: `block-${index}`,
         description: play.description,
@@ -48,14 +47,36 @@ const Content = () => {
     fetchNodesFromAPI();
   }, []);
 
-  const onDragStart = (event, block) => {
-    event.dataTransfer.setData("application/reactflow", JSON.stringify(block));
-    event.dataTransfer.effectAllowed = "move";
+  // Add new edges and update nodePath
+  const onConnect = (params) => {
+    setEdges((eds) => {
+      const updatedEdges = addEdge(params, eds);
+      updateNodePath(updatedEdges);
+      return updatedEdges;
+    });
   };
 
-  const onDragOver = (event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
+  const updateNodePath = (currentEdges) => {
+    const path = [];
+    const visited = new Set();
+
+    const startNodes = nodes.filter(
+      (node) =>
+        !currentEdges.some((edge) => edge.target === node.id)
+    );
+
+    const traverse = (nodeId) => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      path.push(nodeId);
+
+      currentEdges
+        .filter((edge) => edge.source === nodeId)
+        .forEach((edge) => traverse(edge.target));
+    };
+
+    startNodes.forEach((node) => traverse(node.id));
+    setNodePath(path);
   };
 
   const onDrop = (event) => {
@@ -75,10 +96,32 @@ const Content = () => {
       id: blockData.id,
       position,
       data: { label: blockData.description },
-      style: { background: blockData.completed ? "#A7F3D0" : "#FCA5A5" }, // Green for completed, red for not completed
+      style: { background: blockData.completed ? "#A7F3D0" : "#FCA5A5" },
     };
 
     setNodes((nds) => [...nds, newNode]);
+  };
+
+  // Execute Button: Make a POST API call with the Node Path
+  const handleExecute = async () => {
+    const payload = {
+      nodePath: nodePath.map((nodeId) => ({
+        id: nodeId,
+        description: nodes.find((n) => n.id === nodeId)?.data.label || "",
+      })),
+    };
+    console.log("Payload:", payload);
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:5000/playbook/execute",
+        payload
+      );
+      console.log("POST Response:", response.data);
+      alert("Execution Successful!");
+    } catch (error) {
+      console.error("Error during execution:", error);
+      alert("Execution Failed! Check the console for details.");
+    }
   };
 
   return (
@@ -88,9 +131,9 @@ const Content = () => {
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
-      onConnect={(params) => setEdges((eds) => addEdge(params, eds))} // Add this
+      onConnect={onConnect}
       onDrop={onDrop}
-      onDragOver={onDragOver}
+      onDragOver={(event) => event.preventDefault()}
       onInit={setReactFlowInstance}
     >
       {/* Left Panel */}
@@ -120,7 +163,12 @@ const Content = () => {
                   key={block.id}
                   className="p-2 text-sm text-center bg-gray-100 border rounded cursor-grab hover:bg-gray-200"
                   draggable
-                  onDragStart={(event) => onDragStart(event, block)}
+                  onDragStart={(event) =>
+                    event.dataTransfer.setData(
+                      "application/reactflow",
+                      JSON.stringify(block)
+                    )
+                  }
                 >
                   {block.description}
                 </div>
@@ -128,6 +176,28 @@ const Content = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <button
+  onClick={handleExecute}
+  className="fixed bottom-4 right-4 p-3 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-lg z-50"
+  style={{ pointerEvents: "auto" }} // Ensure the button captures clicks
+>
+  Execute
+</button>
+
+
+      {/* Node Path Display */}
+      <div className="fixed bottom-4 left-4 w-48 bg-white border rounded p-3 shadow-lg"
+       >
+        <h3 className="text-lg font-bold mb-2">Node Path</h3>
+        <ul className="text-sm text-gray-700">
+          {nodePath.map((nodeId, index) => (
+            <li key={index}>
+              {index + 1}. {nodes.find((n) => n.id === nodeId)?.data.label}
+            </li>
+          ))}
+        </ul>
       </div>
 
       <Controls />

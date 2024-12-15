@@ -23,7 +23,7 @@ const Content = () => {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const ref = useRef(null);
 
-  // Fetch blocks (nodes) from the API
+  // Fetch nodes from the API
   const fetchNodesFromAPI = async () => {
     try {
       const response = await axios.get(
@@ -50,36 +50,36 @@ const Content = () => {
   // Add new edges and update nodePath
   const onConnect = (params) => {
     setEdges((eds) => {
-      const updatedEdges = addEdge(params, eds);
+      const updatedEdges = addEdge(params, eds); // Allow multiple edges from a single node
       updateNodePath(updatedEdges);
       return updatedEdges;
     });
   };
 
+  // Update the path of connected nodes (supports branches)
   const updateNodePath = (currentEdges) => {
     const path = [];
     const visited = new Set();
-  
+
     // Start traversal only from nodes that are sources in the edges
     const startNodes = nodes.filter((node) =>
       currentEdges.some((edge) => edge.source === node.id)
     );
-  
+
     const traverse = (nodeId) => {
       if (visited.has(nodeId)) return;
       visited.add(nodeId);
       path.push(nodeId);
-  
+
       // Traverse to connected nodes
       currentEdges
         .filter((edge) => edge.source === nodeId)
         .forEach((edge) => traverse(edge.target));
     };
-  
+
     startNodes.forEach((node) => traverse(node.id));
     setNodePath(path);
   };
-  
 
   const onDrop = (event) => {
     event.preventDefault();
@@ -104,7 +104,6 @@ const Content = () => {
     setNodes((nds) => [...nds, newNode]);
   };
 
-  // Execute Button: Make a POST API call with the Node Path
   const handleExecute = async () => {
     const payload = {
       nodePath: nodePath.map((nodeId) => ({
@@ -112,7 +111,7 @@ const Content = () => {
         description: nodes.find((n) => n.id === nodeId)?.data.label || "",
       })),
     };
-    console.log("Payload:", payload);
+
     try {
       const response = await axios.post(
         "http://127.0.0.1:5000/playbook/execute",
@@ -133,7 +132,7 @@ const Content = () => {
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
+      onConnect={onConnect} // Supports multiple edges
       onDrop={onDrop}
       onDragOver={(event) => event.preventDefault()}
       onInit={setReactFlowInstance}
@@ -180,18 +179,16 @@ const Content = () => {
         </div>
       </div>
 
+      {/* Execute Button */}
       <button
-  onClick={handleExecute}
-  className="fixed bottom-4 right-4 p-3 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-lg z-50"
-  style={{ pointerEvents: "auto" }} // Ensure the button captures clicks
->
-  Execute
-</button>
-
+        onClick={handleExecute}
+        className="fixed bottom-4 right-4 p-3 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-lg z-50"
+      >
+        Execute
+      </button>
 
       {/* Node Path Display */}
-      <div className="fixed bottom-4 left-4 w-48 bg-white border rounded p-3 shadow-lg"
-       >
+      <div className="fixed bottom-4 left-4 bg-white border rounded p-3 shadow-lg">
         <h3 className="text-lg font-bold mb-2">Node Path</h3>
         <ul className="text-sm text-gray-700">
           {nodePath.map((nodeId, index) => (

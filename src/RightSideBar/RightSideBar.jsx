@@ -47,6 +47,11 @@ const RightSideBar = ({
     }
   }, [selectedPlaybook,contextLogs, dockerLogs]);
 
+  useEffect(() => {
+    console.log("Context Logs: ", contextLogs);
+    
+  }, [contextLogs, dockerLogs]);
+
   if (!selectedPlaybook) {
     return (
       <div style={{ width: "300px", background: "#fafafa", padding: "10px" }}>

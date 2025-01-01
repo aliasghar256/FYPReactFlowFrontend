@@ -184,7 +184,7 @@ useEffect(() => {
     if (!selectedPlaybook || !newPlayDescription) return;
     try {
       const payload = { description: newPlayDescription };
-      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.name}/play`;
+      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.id}/play`;
       // POST /playbook/<playbook_name>/play
       await axios.post(url, payload);
       await fetchAllPlaybooks(); // Refresh
@@ -260,7 +260,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
   
       if (sourceNode && targetNode) {
         try {
-          const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.name}/connect`;
+          const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.id}/connect`;
           const payload = {
             parent_description: sourceNode.data.label,
             child_description: targetNode.data.label,
@@ -427,9 +427,9 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
               {playbooks.map((pb, i) => (
                 <div key={i} className="border p-2 rounded">
                   <div className="flex items-center justify-between mb-1">
-                    <strong>{pb.name}</strong>
+                    <strong>{pb.id}</strong>
                     <button
-                      onClick={() => handleExecutePlaybook(pb.name)}
+                      onClick={() => handleExecutePlaybook(pb.id)}
                       className="text-sm bg-green-500 text-white px-2 py-0.5 rounded hover:bg-green-600"
                     >
                       Execute

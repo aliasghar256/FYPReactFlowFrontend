@@ -16,7 +16,7 @@ const RightSideBar = ({
     if (!selectedPlaybook) return;
 
     try {
-      const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/docker/logs`;
+      const url = `http://93.127.202.133:5000/docker/logs`;
       const response = await axios.get(url);
       setDockerLogs(response.data.logs || []);
     } catch (error) {

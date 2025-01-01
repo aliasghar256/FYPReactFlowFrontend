@@ -32,6 +32,16 @@ const Content = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [nodePath, setNodePath] = useState([]); // The ordered list of connected nodes
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  // Add two new pieces of state for selected nodes and edges:
+const [selectedNodes, setSelectedNodes] = useState([]);
+const [selectedEdges, setSelectedEdges] = useState([]);
+
+// This will be called automatically whenever the selection changes in the React Flow canvas
+const onSelectionChange = useCallback(({ nodes, edges }) => {
+  setSelectedNodes(nodes || []);
+  setSelectedEdges(edges || []);
+}, []);
+
 
   const ref = useRef(null);
 
@@ -41,17 +51,21 @@ const Content = () => {
 
   const addUniqueEdges = (newEdges) => {
     setEdges((prevEdges) => {
-      // Create a set of existing edge IDs for quick lookup
       const existingEdgeIds = new Set(prevEdges.map((edge) => edge.id));
-  
-      // Filter out edges that have the same ID as existing edges
       const filteredEdges = newEdges.filter((edge) => !existingEdgeIds.has(edge.id));
-  
-      // Log for debugging
       console.log("Adding unique edges:", filteredEdges);
-  
-      // Return the updated edge list
       return [...prevEdges, ...filteredEdges];
+    });
+  };
+  
+  const onEdgesDelete = (edgesToDelete) => {
+    setEdges((prevEdges) => {
+      // Remove the edges that match the edgesToDelete
+      const updatedEdges = prevEdges.filter(
+        (edge) => !edgesToDelete.some((deletedEdge) => deletedEdge.id === edge.id)
+      );
+      console.log("Edges after deletion:", updatedEdges); // Debugging log
+      return updatedEdges;
     });
   };
   
@@ -110,10 +124,37 @@ const Content = () => {
     fetchData();
   }, []); // Run only once on component mount
   
+  const deduplicateEdges = (edges) => {
+    const edgeMap = new Map();
+    edges.forEach((edge) => {
+      if (!edgeMap.has(edge.id)) {
+        edgeMap.set(edge.id, edge);
+      }
+    });
+    return Array.from(edgeMap.values());
+  };
+  
 
 useEffect(() => {
   updateNodePath();
+  setEdges((prevEdges) => deduplicateEdges(prevEdges));
+
 }, [edges]);
+useEffect(() => {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      // If there are selected edges, let’s delete them
+      if (selectedEdges.length > 0) {
+        onEdgesDelete(selectedEdges);  // or your own custom logic
+      }
+      // If you also want to delete selected nodes, you can do so here
+      // e.g. onNodesDelete(selectedNodes)
+    }
+  };
+
+  document.addEventListener('keydown', handleKeyDown);
+  return () => document.removeEventListener('keydown', handleKeyDown);
+}, [selectedEdges, onEdgesDelete]); 
 
 
   // ==============================
@@ -127,7 +168,7 @@ useEffect(() => {
         category: newPlaybookCategory,
       };
       // POST /playbook
-      await axios.post("http://127.0.0.1:5000/playbook", payload);
+      await axios.post("http://93.127.202.133:3000/playbook", payload);
       await fetchAllPlaybooks();
       setNewPlaybookName("");
       setNewPlaybookCategory("");
@@ -145,7 +186,7 @@ useEffect(() => {
     if (!selectedPlaybook || !newPlayDescription) return;
     try {
       const payload = { description: newPlayDescription };
-      const url = `http://127.0.0.1:5000/playbook/${selectedPlaybook.name}/play`;
+      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.name}/play`;
       // POST /playbook/<playbook_name>/play
       await axios.post(url, payload);
       await fetchAllPlaybooks(); // Refresh
@@ -157,13 +198,14 @@ useEffect(() => {
     }
   };
 
+  
   // ==============================
   // Execute a given playbook
   // ==============================
   const handleExecutePlaybook = async (playbookName) => {
     try {
       // Example: POST /playbook/<playbookName>/execute_all
-      const url = `http://127.0.0.1:5000/playbook/${playbookName}/execute_all`;
+      const url = `http://93.127.202.133:3000/playbook/${playbookName}/execute_all`;
       const res = await axios.post(url);
       console.log("Execute Playbook:", res.data);
       alert(`Playbook '${playbookName}' executed!`);
@@ -172,6 +214,29 @@ useEffect(() => {
       alert("Playbook execution failed. See console for details.");
     }
   };
+
+  // Content.jsx (excerpt)
+
+const handleExecuteSinglePlay = async (playbookName, playId) => {
+  if (!playbookName || !playId) return;
+
+  try {
+    const url = `http://93.127.202.133:3000/playbook/${playbookName}/execute`;
+    const payload = { play_id: playId };
+
+    const res = await axios.post(url, payload);
+    alert("Single play executed!");
+    console.log("Single Play Execution:", res.data);
+
+    // Optionally, fetch logs or contexts
+    // fetchDockerLogs();
+    // fetchContextLogs(playbookName);
+  } catch (error) {
+    console.error("Error executing single play:", error);
+    alert("Single-play execution failed. See console for details.");
+  }
+};
+
 
   // ==============================
   // ReactFlow: onConnect
@@ -197,7 +262,7 @@ useEffect(() => {
   
       if (sourceNode && targetNode) {
         try {
-          const url = `http://127.0.0.1:5000/playbook/${selectedPlaybook.name}/connect`;
+          const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.name}/connect`;
           const payload = {
             parent_description: sourceNode.data.label,
             child_description: targetNode.data.label,
@@ -285,7 +350,7 @@ useEffect(() => {
       // Example of calling some "execute" endpoint
       // Possibly this is not used if you prefer executing the entire playbook
       const response = await axios.post(
-        "http://127.0.0.1:5000/playbook/execute",
+        "http://93.127.202.133:3000/playbook/execute",
         payload
       );
       console.log("POST Response:", response.data);
@@ -301,16 +366,19 @@ useEffect(() => {
   // ==============================
   return (
     <ReactFlow
-      ref={ref}
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      onDrop={onDrop}
-      onDragOver={(event) => event.preventDefault()}
-      onInit={setReactFlowInstance}
-    >
+  ref={ref}
+  nodes={nodes}
+  edges={edges}
+  onNodesChange={onNodesChange}
+  onEdgesChange={onEdgesChange}
+  onEdgesDelete={onEdgesDelete} // Add this line
+  onConnect={onConnect}
+  onDrop={onDrop}
+  onDragOver={(event) => event.preventDefault()}
+  onInit={setReactFlowInstance}
+  onSelectionChange={onSelectionChange}
+>
+
       {/* LEFT SIDEBAR */}
       <div
         className={`transition-all duration-500 fixed top-0 ${

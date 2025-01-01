@@ -59,6 +59,10 @@ const RightSideBar = ({
 
   return (
     <div style={{ width: "300px", background: "#fafafa", padding: "10px" }}>
+      {/* Display the selected playbook name */}
+      <h2 style={{ textAlign: "center", color: "#333" }}>
+        {selectedPlaybook.name}
+      </h2>
       <h3>Docker Logs</h3>
       <div
         style={{

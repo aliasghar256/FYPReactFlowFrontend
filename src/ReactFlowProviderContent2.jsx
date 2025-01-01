@@ -15,8 +15,6 @@ import { useGlobalContext } from "./context";
 import {deserializePlaybooks, serializePlaybooks, fetchAllPlaybooks} from "./Playbook/PlaybookManager";
 import RightSideBar from "./RightSideBar/RightSideBar";
 
-
-
 const Content = () => {
   const { isSidebarOpen, closeSidebar } = useGlobalContext();
 

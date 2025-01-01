@@ -30,7 +30,7 @@ const RightSideBar = ({
     if (!selectedPlaybook) return;
 
     try {
-      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.id}/context_logs`;
+      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.id}/global_context_log`;
       const response = await axios.get(url);
       setContextLogs(response.data.logs || []);
     } catch (error) {

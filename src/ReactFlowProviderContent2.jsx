@@ -166,7 +166,7 @@ useEffect(() => {
         category: newPlaybookCategory,
       };
       // POST /playbook
-      await axios.post("http://93.127.202.133:3000/playbook", payload);
+      await axios.post("http://93.127.202.133:5000/playbook", payload);
       await fetchAllPlaybooks();
       setNewPlaybookName("");
       setNewPlaybookCategory("");
@@ -184,7 +184,7 @@ useEffect(() => {
     if (!selectedPlaybook || !newPlayDescription) return;
     try {
       const payload = { description: newPlayDescription };
-      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.id}/play`;
+      const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/play`;
       // POST /playbook/<playbook_name>/play
       await axios.post(url, payload);
       await fetchAllPlaybooks(); // Refresh
@@ -203,7 +203,7 @@ useEffect(() => {
   const handleExecutePlaybook = async (playbookName) => {
     try {
       // Example: POST /playbook/<playbookName>/execute_all
-      const url = `http://93.127.202.133:3000/playbook/${playbookName}/execute_all`;
+      const url = `http://93.127.202.133:5000/playbook/${playbookName}/execute_all`;
       const res = await axios.post(url);
       console.log("Execute Playbook:", res.data);
       alert(`Playbook '${playbookName}' executed!`);
@@ -219,7 +219,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
   if (!playbookName || !playId) return;
 
   try {
-    const url = `http://93.127.202.133:3000/playbook/${playbookName}/execute`;
+    const url = `http://93.127.202.133:5000/playbook/${playbookName}/execute`;
     const payload = { play_id: playId };
 
     const res = await axios.post(url, payload);
@@ -260,7 +260,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
   
       if (sourceNode && targetNode) {
         try {
-          const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.id}/connect`;
+          const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/connect`;
           const payload = {
             parent_description: sourceNode.data.label,
             child_description: targetNode.data.label,
@@ -348,7 +348,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
       // Example of calling some "execute" endpoint
       // Possibly this is not used if you prefer executing the entire playbook
       const response = await axios.post(
-        "http://93.127.202.133:3000/playbook/execute",
+        "http://93.127.202.133:5000/playbook/execute",
         payload
       );
       console.log("POST Response:", response.data);

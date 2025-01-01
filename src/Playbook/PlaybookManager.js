@@ -56,7 +56,7 @@ export const serializePlaybooks = (playbooks) => {
 // Fetch all playbooks from the backend and deserialize them
 export const fetchAllPlaybooks = async () => {
   try {
-    const res = await axios.get("http://93.127.202.133:3000/allplaybooks");
+    const res = await axios.get("http://93.127.202.133:5000/allplaybooks");
     console.log("Res Data: " + JSON.stringify(res.data, null, 2)); // Pretty-print JSON
     const playbooks = deserializePlaybooks(res.data); // Deserialize response
     console.log("Deserialized Playbooks from from fetchfunct:", playbooks); // Log for debugging

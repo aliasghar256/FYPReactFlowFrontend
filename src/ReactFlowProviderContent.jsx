@@ -12,6 +12,7 @@ import "reactflow/dist/style.css";
 import axios from "axios";
 import { BiSolidDockLeft } from "react-icons/bi";
 import { useGlobalContext } from "./context";
+import {deserializePlaybooks, serializePlaybooks, fetchAllPlaybooks} from "./Playbook/PlaybookManager";
 
 const Content = () => {
   const { isSidebarOpen, closeSidebar } = useGlobalContext();
@@ -34,21 +35,19 @@ const Content = () => {
   // ==============================
   // Fetch All Playbooks + Plays
   // ==============================
-  const fetchAllPlaybooks = async () => {
-    try {
-      // Example: GET /allplaybooks => { "Nmap_test": {...}, "Gobuster_test": {...} }
-      const res = await axios.get("http://127.0.0.1:5000/allplaybooks");
-      // Convert object to array if needed
-      const normalized = Object.values(res.data); // => [{ name: 'Nmap_test', ...}, { name: 'Gobuster_test', ...}]
-      setPlaybooks(normalized);
-    } catch (error) {
-      console.error("Error fetching playbooks:", error);
-    }
-  };
 
   useEffect(() => {
-    fetchAllPlaybooks();
-  }, []);
+  const fetchData = async () => {
+    const data = await fetchAllPlaybooks(); // Await the promise to get resolved data
+    setPlaybooks(data || []); // Set the resolved data to playbooks
+  };
+  fetchData();
+}, []);
+
+useEffect(() => {
+  updateNodePath();
+}, [edges]);
+
 
   // ==============================
   // Create a new playbook
@@ -113,22 +112,21 @@ const Content = () => {
   const onConnect = async (params) => {
     // Add the edge in the local UI
     setEdges((eds) => {
-      const updatedEdges = addEdge(params, eds);
-      updateNodePath(updatedEdges);
-      return updatedEdges;
+      const updatedEdges = addEdge(params, eds); // Add the new edge to the current edges
+      console.log("Updated Edges State:", updatedEdges); // Debug: Log the updated edges
+      return updatedEdges; // Update the edges state
     });
-
-    // If you want to also notify your backend that these two plays are connected:
+  
+    // Use global edges to update the node path
+    updateNodePath();
+  
+    // Notify the backend about the connection
     if (selectedPlaybook) {
-      // Typically, the node id => the "play" we dragged
-      // Make sure you stored enough info in the node's id/data to connect them.
       const sourceNode = nodes.find((n) => n.id === params.source);
       const targetNode = nodes.find((n) => n.id === params.target);
-
+  
       if (sourceNode && targetNode) {
         try {
-          // Example: POST /playbook/<playbook_name>/connect
-          // body: { parent_description: '...', child_description: '...' }
           const url = `http://127.0.0.1:5000/playbook/${selectedPlaybook.name}/connect`;
           const payload = {
             parent_description: sourceNode.data.label,
@@ -142,30 +140,32 @@ const Content = () => {
       }
     }
   };
+  
+  
 
   // ==============================
   // Build the "nodePath" array
   // ==============================
-  const updateNodePath = (currentEdges) => {
+  const updateNodePath = () => {
     const path = [];
     const visited = new Set();
-
+  
     // Only start from nodes that are "sources" in the edges
     const startNodes = nodes.filter((node) =>
-      currentEdges.some((edge) => edge.source === node.id)
+      edges.some((edge) => edge.source === node.id)
     );
-
+  
     const traverse = (nodeId) => {
       if (visited.has(nodeId)) return;
       visited.add(nodeId);
       path.push(nodeId);
-
+  
       // Traverse connected children
-      currentEdges
+      edges
         .filter((edge) => edge.source === nodeId)
         .forEach((edge) => traverse(edge.target));
     };
-
+  
     startNodes.forEach((node) => traverse(node.id));
     setNodePath(path);
   };

@@ -2,6 +2,7 @@ import React from "react";
 import { FaBars } from "react-icons/fa";
 import { useGlobalContext } from "./context";
 import ReactFlowProviderContent from "./ReactFlowProviderContent";
+import ReactFlowProviderContent2 from "./ReactFlowProviderContent2";
 const Home = () => {
   const { openSidebar, isSidebarOpen } = useGlobalContext();
 
@@ -28,7 +29,8 @@ const Home = () => {
         </div>
       </div>
       <div>
-        <ReactFlowProviderContent />
+        
+        <ReactFlowProviderContent2 />
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import axios from "axios";
 import { BiSolidDockLeft } from "react-icons/bi";
 import { useGlobalContext } from "./context";
 import {deserializePlaybooks, serializePlaybooks, fetchAllPlaybooks} from "./Playbook/PlaybookManager";
+import RightSideBar from "./RightSideBar/RightSideBar";
 
 const Content = () => {
   const { isSidebarOpen, closeSidebar } = useGlobalContext();
@@ -391,38 +392,22 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* RIGHT SIDEBAR: SELECTED PLAYBOOK DETAILS */}
-      {selectedPlaybook && (
-        <div className="fixed top-0 right-0 w-64 h-screen bg-white border-l px-4 py-4 overflow-y-auto">
-          <h3 className="text-xl font-bold mb-2">
-            {selectedPlaybook.name} Details
-          </h3>
+      <div className="absolute inset-y-0 right-0 w-80 bg-white border-l border-gray-300 z-50">
+  <RightSideBar
+    selectedPlaybook={selectedPlaybook}
+    setSelectedPlaybook={setSelectedPlaybook}
+  />
+</div>
 
-          {/* ADD A NEW PLAY */}
-          <div className="mb-4">
-            <h4 className="font-semibold mb-1">Add New Play</h4>
-            <input
-              type="text"
-              placeholder="Play Description"
-              className="border p-1 rounded w-full mb-2"
-              value={newPlayDescription}
-              onChange={(e) => setNewPlayDescription(e.target.value)}
-            />
-            <button
-              onClick={addNewPlay}
-              className="bg-blue-500 text-white w-full py-1 px-2 rounded hover:bg-blue-600"
-            >
-              Add Play
-            </button>
-          </div>
-          {/* Optionally, you could show the list of plays again or more details here. */}
-        </div>
-      )}
 
-        {/* BOTTOM LEFT: Node Path Display */}
-        <div className="fixed bottom-4 left-4 bg-white border rounded p-3 shadow-lg">
-          <h3 className="text-lg font-bold mb-2">Node Path</h3>
-          <div className="text-sm text-gray-700">
+
+{/* Node Path Overlay */}
+<div
+          className="fixed bottom-4 left-4 bg-white border rounded shadow-lg p-4 z-40"
+          style={{ width: "500px", maxHeight: "135px", overflowY: "auto" }}
+        >
+          <h3 className="text-lg font-bold mb-4">Node Path</h3>
+          <div className="text-sm text-gray-700 mb-4">
             <pre className="whitespace-pre-wrap">
               {'{'}
               {nodePath.map((nodeId, index) => {
@@ -438,6 +423,13 @@ useEffect(() => {
           </div>
         </div>
 
+        {/* Controls Overlay */}
+        <div className="fixed bottom-4 left-[520px] z-50 pointer-events-auto">
+          <Controls />
+        </div>
+
+          
+
 
       {/* BOTTOM RIGHT: Execute Node Path (Optional) */}
       <button
@@ -447,7 +439,6 @@ useEffect(() => {
         Execute Node Path
       </button>
 
-      <Controls />
       <MiniMap />
       <Background />
     </ReactFlow>

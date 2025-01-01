@@ -31,9 +31,13 @@ const Content = () => {
   const [nodePath, setNodePath] = useState([]); // The ordered list of connected nodes
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   // Add two new pieces of state for selected nodes and edges:
-const [selectedNodes, setSelectedNodes] = useState([]);
-const [selectedEdges, setSelectedEdges] = useState([]);
-const [newIp, setNewIp] = useState("");
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [selectedEdges, setSelectedEdges] = useState([]);
+  const [newIp, setNewIp] = useState("");
+  const [refetchTrigger, setRefetchTrigger] = useState(false);
+
+  const triggerRefetch = () => setRefetchTrigger((prev) => !prev);
+
 
 
 // This will be called automatically whenever the selection changes in the React Flow canvas
@@ -61,7 +65,7 @@ const onSelectionChange = useCallback(({ nodes, edges }) => {
   const handleSetIp = async () => {
     if (!newIp) return;
     try {
-      await axios.post("http://127.0.0.1:5000/setip", { ip: newIp });
+      await axios.post("http://93.127.202.133:5000/setip", { ip: newIp });
       alert("Global IP set!");
       setNewIp("");
     } catch (err) {
@@ -80,6 +84,10 @@ const onSelectionChange = useCallback(({ nodes, edges }) => {
       return updatedEdges;
     });
   };
+  
+  useEffect(() => {
+    // This effect re-renders the component whenever refetchTrigger changes
+  }, [refetchTrigger]);
   
 
   useEffect(() => {
@@ -182,6 +190,7 @@ useEffect(() => {
       // POST /playbook
       await axios.post("http://93.127.202.133:5000/playbook", payload);
       await fetchAllPlaybooks();
+      triggerRefetch();
       setNewPlaybookName("");
       setNewPlaybookCategory("");
       alert("Playbook created successfully!");
@@ -202,6 +211,7 @@ useEffect(() => {
       await axios.post(url, payload);
       await fetchAllPlaybooks(); // Refresh playbooks
       setNewPlayDescription(""); // Clear input
+      triggerRefetch(); // Force a re-render
       alert("Play added successfully!");
     } catch (error) {
       console.error("Error adding new play:", error);

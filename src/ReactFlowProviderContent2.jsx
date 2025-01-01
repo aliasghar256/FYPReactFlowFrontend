@@ -33,6 +33,8 @@ const Content = () => {
   // Add two new pieces of state for selected nodes and edges:
 const [selectedNodes, setSelectedNodes] = useState([]);
 const [selectedEdges, setSelectedEdges] = useState([]);
+const [newIp, setNewIp] = useState("");
+
 
 // This will be called automatically whenever the selection changes in the React Flow canvas
 const onSelectionChange = useCallback(({ nodes, edges }) => {
@@ -55,6 +57,18 @@ const onSelectionChange = useCallback(({ nodes, edges }) => {
       return [...prevEdges, ...filteredEdges];
     });
   };
+
+  const handleSetIp = async () => {
+    if (!newIp) return;
+    try {
+      await axios.post("http://127.0.0.1:5000/setip", { ip: newIp });
+      alert("Global IP set!");
+      setNewIp("");
+    } catch (err) {
+      console.error("Error setting IP:", err);
+    }
+  };
+  
   
   const onEdgesDelete = (edgesToDelete) => {
     setEdges((prevEdges) => {
@@ -194,7 +208,6 @@ useEffect(() => {
       alert("Failed to add play. See console for details.");
     }
   };
-  
 
   
   // ==============================
@@ -419,6 +432,24 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
               Add Playbook
             </button>
           </div>
+
+          {/* SET TARGET IP */}
+    <div className="mb-4 bg-gray-100 p-3 rounded">
+      <h3 className="font-bold mb-2">Set Target IP</h3>
+      <input
+        type="text"
+        placeholder="IP Address"
+        className="border p-1 rounded w-full mb-2"
+        value={newIp}
+        onChange={(e) => setNewIp(e.target.value)}
+      />
+      <button
+        onClick={handleSetIp}
+        className="w-full bg-green-500 text-white py-1 px-2 rounded hover:bg-green-600"
+      >
+        Set IP
+      </button>
+    </div>
 
           {/* LIST OF ALL PLAYBOOKS (AND PLAYS) */}
 <div className="flex-1 overflow-y-auto">

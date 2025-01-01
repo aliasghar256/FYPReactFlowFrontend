@@ -210,8 +210,8 @@ useEffect(() => {
       const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/create-play`;
       await axios.post(url, payload);
       await fetchAllPlaybooks(); // Refresh playbooks
-      setNewPlayDescription(""); // Clear input
       triggerRefetch(); // Force a re-render
+      setNewPlayDescription(""); // Clear input
       alert("Play added successfully!");
     } catch (error) {
       console.error("Error adding new play:", error);

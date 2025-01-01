@@ -45,7 +45,7 @@ const RightSideBar = ({
       fetchContextLogs();
       console.log("Context Logs: ", contextLogs);
     }
-  }, [selectedPlaybook]);
+  }, [selectedPlaybook,contextLogs, dockerLogs]);
 
   if (!selectedPlaybook) {
     return (

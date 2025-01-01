@@ -16,7 +16,7 @@ const RightSideBar = ({
     if (!selectedPlaybook) return;
 
     try {
-      const url = `http://127.0.0.1:5000/playbook/${selectedPlaybook.name}/logs`;
+      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.name}/logs`;
       const response = await axios.get(url);
       setDockerLogs(response.data.logs || []);
     } catch (error) {
@@ -30,7 +30,7 @@ const RightSideBar = ({
     if (!selectedPlaybook) return;
 
     try {
-      const url = `http://127.0.0.1:5000/playbook/${selectedPlaybook.name}/context_logs`;
+      const url = `http://93.127.202.133:3000/playbook/${selectedPlaybook.name}/context_logs`;
       const response = await axios.get(url);
       setContextLogs(response.data.logs || []);
     } catch (error) {

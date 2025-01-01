@@ -185,16 +185,16 @@ useEffect(() => {
     try {
       const payload = { description: newPlayDescription };
       const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/play`;
-      // POST /playbook/<playbook_name>/play
       await axios.post(url, payload);
-      await fetchAllPlaybooks(); // Refresh
-      setNewPlayDescription("");
+      await fetchAllPlaybooks(); // Refresh playbooks
+      setNewPlayDescription(""); // Clear input
       alert("Play added successfully!");
     } catch (error) {
       console.error("Error adding new play:", error);
       alert("Failed to add play. See console for details.");
     }
   };
+  
 
   
   // ==============================
@@ -421,60 +421,82 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
           </div>
 
           {/* LIST OF ALL PLAYBOOKS (AND PLAYS) */}
-          <div className="flex-1 overflow-y-auto">
-            <h3 className="text-lg font-bold text-black">Playbooks</h3>
-            <div className="space-y-3 mt-3">
-              {playbooks.map((pb, i) => (
-                <div key={i} className="border p-2 rounded">
-                  <div className="flex items-center justify-between mb-1">
-                    <strong>{pb.id}</strong>
-                    <button
-                      onClick={() => handleExecutePlaybook(pb.id)}
-                      className="text-sm bg-green-500 text-white px-2 py-0.5 rounded hover:bg-green-600"
-                    >
-                      Execute
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Category: {pb.category}
-                  </p>
-                  {/* Select playbook (so we can add plays in the right sidebar) */}
-                  <button
-                    onClick={() => setSelectedPlaybook(pb)}
-                    className="text-xs underline text-blue-600"
-                  >
-                    View / Edit
-                  </button>
+<div className="flex-1 overflow-y-auto">
+  <h3 className="text-lg font-bold text-black">Playbooks</h3>
+  <div className="space-y-3 mt-3">
+    {playbooks.map((pb, i) => (
+      <div key={i} className="border p-2 rounded">
+        {/* Playbook Header */}
+        <div className="flex items-center justify-between mb-1">
+          <strong>{pb.id}</strong>
+          <button
+            onClick={() => handleExecutePlaybook(pb.id)}
+            className="text-sm bg-green-500 text-white px-2 py-0.5 rounded hover:bg-green-600"
+          >
+            Execute
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mb-2">
+          Category: {pb.category}
+        </p>
+        {/* Select playbook (so we can add plays in the right sidebar) */}
+        <button
+          onClick={() => setSelectedPlaybook(pb)}
+          className="text-xs underline text-blue-600"
+        >
+          View / Edit
+        </button>
 
-                  {/* Show each play in this playbook as drag blocks */}
-                  <div className="mt-2 space-y-1">
-                    {pb.plays?.map((play, idx) => {
-                      const blockData = {
-                        id: `play-${pb.name}-${idx}`,
-                        description: play.description,
-                        completed: play.completed,
-                      };
-                      return (
-                        <div
-                          key={idx}
-                          className="p-1 text-sm bg-gray-100 border rounded cursor-grab hover:bg-gray-200"
-                          draggable
-                          onDragStart={(event) =>
-                            event.dataTransfer.setData(
-                              "application/reactflow",
-                              JSON.stringify(blockData)
-                            )
-                          }
-                        >
-                          {play.description}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Show each play in this playbook as drag blocks */}
+        <div className="mt-2 space-y-1">
+          {pb.plays?.map((play, idx) => {
+            const blockData = {
+              id: `play-${pb.name}-${idx}`,
+              description: play.description,
+              completed: play.completed,
+            };
+            return (
+              <div
+                key={idx}
+                className="p-1 text-sm bg-gray-100 border rounded cursor-grab hover:bg-gray-200"
+                draggable
+                onDragStart={(event) =>
+                  event.dataTransfer.setData(
+                    "application/reactflow",
+                    JSON.stringify(blockData)
+                  )
+                }
+              >
+                {play.description}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Add New Play Section */}
+        {selectedPlaybook?.id === pb.id && (
+          <div className="mt-4">
+            <h4 className="font-bold text-sm mb-2">Add New Play</h4>
+            <input
+              type="text"
+              placeholder="Play Description"
+              className="border p-1 rounded w-full mb-2"
+              value={newPlayDescription}
+              onChange={(e) => setNewPlayDescription(e.target.value)}
+            />
+            <button
+              onClick={addNewPlay}
+              className="w-full bg-blue-500 text-white py-1 px-2 rounded hover:bg-blue-600"
+            >
+              Add Play
+            </button>
           </div>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
         </div>
       </div>
 
@@ -484,8 +506,6 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
     setSelectedPlaybook={setSelectedPlaybook}
   />
 </div>
-
-
 
 {/* Node Path Overlay */}
 <div

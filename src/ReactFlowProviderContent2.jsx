@@ -15,6 +15,8 @@ import { useGlobalContext } from "./context";
 import {deserializePlaybooks, serializePlaybooks, fetchAllPlaybooks} from "./Playbook/PlaybookManager";
 import RightSideBar from "./RightSideBar/RightSideBar";
 
+
+
 const Content = () => {
   const { isSidebarOpen, closeSidebar } = useGlobalContext();
 
@@ -37,6 +39,23 @@ const Content = () => {
   // Fetch All Playbooks + Plays
   // ==============================
 
+  const addUniqueEdges = (newEdges) => {
+    setEdges((prevEdges) => {
+      // Create a set of existing edge IDs for quick lookup
+      const existingEdgeIds = new Set(prevEdges.map((edge) => edge.id));
+  
+      // Filter out edges that have the same ID as existing edges
+      const filteredEdges = newEdges.filter((edge) => !existingEdgeIds.has(edge.id));
+  
+      // Log for debugging
+      console.log("Adding unique edges:", filteredEdges);
+  
+      // Return the updated edge list
+      return [...prevEdges, ...filteredEdges];
+    });
+  };
+  
+
   useEffect(() => {
     const fetchData = async () => {
       const data = await fetchAllPlaybooks(); // Fetch playbooks from backend
@@ -56,36 +75,33 @@ const Content = () => {
         );
   
         // Transform forward and backward links into edges
-        // console.log("Data:", data);
+        let count = 0; // Initialize counter for unique edge IDs
         const transformedEdges = Object.values(data).flatMap((playbook) =>
           playbook.plays.flatMap((play) => {
-            // Create edges for forwardLinks
-            // console.log(play.forwardLinks);
-            const forwardEdges =
-              play.forwardLinks?.map((targetId) => ({
-                id: `edge-${play.id}-${targetId}`,
-                source: play.id,
-                target: targetId,
-              })) || [];
+            // Generate forward links
+            const forwardEdges = play.forwardLinks?.map((targetId) => ({
+              id: `edge-${play.playbookName}-${play.id}-${targetId}-${count++}`,
+              source: play.id,
+              target: targetId,
+            })) || [];
   
-            // Create edges for backwardLinks
-            const backwardEdges =
-              play.backwardLinks?.map((sourceId) => ({
-                id: `edge-${sourceId}-${play.id}`,
-                source: sourceId,
-                target: play.id,
-              })) || [];
+            // Generate backward links
+            const backwardEdges = play.backwardLinks?.map((sourceId) => ({
+              id: `edge-${play.playbookName}-${sourceId}-${play.id}-${count++}`,
+              source: sourceId,
+              target: play.id,
+            })) || [];
   
-            // Combine both forward and backward edges
             return [...forwardEdges, ...backwardEdges];
           })
         );
   
-        // console.log("Transformed Nodes:", transformedNodes);
-        // console.log("Transformed Edges:", transformedEdges);
-  
         setNodes(transformedNodes); // Update nodes state
-        setEdges(transformedEdges); // Update edges state
+        console.log("Transformed Nodes:", transformedNodes);
+        console.log("Transformed Edges:", transformedEdges);
+  
+        // Use addUniqueEdges to ensure no duplicate edges are added
+        addUniqueEdges(transformedEdges);
       }
   
       setPlaybooks(data || []); // Optionally set the raw playbooks data
@@ -162,13 +178,16 @@ useEffect(() => {
   // ==============================
   const onConnect = async (params) => {
     // Add the edge in the local UI
-    setEdges((eds) => {
-      const updatedEdges = addEdge(params, eds); // Add the new edge to the current edges
-      console.log("Updated Edges State:", updatedEdges); // Debug: Log the updated edges
-      return updatedEdges; // Update the edges state
-    });
+    const newEdge = {
+      id: `edge-${params.source}-${params.target}`, // Unique ID for the edge
+      source: params.source,
+      target: params.target,
+    };
   
-    // Use global edges to update the node path
+    // Use addUniqueEdges to avoid duplicate edges
+    addUniqueEdges([newEdge]);
+  
+    // Update the node path globally
     updateNodePath();
   
     // Notify the backend about the connection
@@ -191,6 +210,7 @@ useEffect(() => {
       }
     }
   };
+  
   
   
 

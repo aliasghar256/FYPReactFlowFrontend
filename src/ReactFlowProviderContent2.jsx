@@ -65,7 +65,7 @@ const onSelectionChange = useCallback(({ nodes, edges }) => {
   const handleSetIp = async () => {
     if (!newIp) return;
     try {
-      await axios.post("http://localhost:5000/setip", { ip: newIp });
+      await axios.post("http://93.127.202.133:5000/setip", { ip: newIp });
       alert("Global IP set!");
       setNewIp("");
     } catch (err) {
@@ -194,7 +194,7 @@ useEffect(() => {
     if (!newPlaybookName || !newPlaybookCategory) return;
     try {
       const payload = { name: newPlaybookName, category: newPlaybookCategory };
-      await axios.post("http//localhost:5000/playbook", payload);
+      await axios.post("http//93.127.202.133:5000/playbook", payload);
       
       // Instead of calling fetchAllPlaybooks again, just trigger a re-fetch
       triggerRefetch();
@@ -216,7 +216,7 @@ useEffect(() => {
     if (!selectedPlaybook || !newPlayDescription) return;
     try {
       const payload = { description: newPlayDescription };
-      const url = `http//localhost:5000/playbook/${selectedPlaybook.id}/create-play`;
+      const url = `http//93.127.202.133:5000/playbook/${selectedPlaybook.id}/create-play`;
       await axios.post(url, payload);
   
       // Again, just rely on triggerRefetch()
@@ -236,7 +236,7 @@ useEffect(() => {
   const handleExecutePlaybook = async (playbookName) => {
     try {
       // Example: POST /playbook/<playbookName>/execute_all
-      const url = `http5//localhost:5000/playbook/${playbookName}/execute_all`;
+      const url = `http5//93.127.202.133:5000/playbook/${playbookName}/execute_all`;
       const res = await axios.post(url);
       console.log("Execute Playbook:", res.data);
       alert(`Playbook '${playbookName}' executed!`);
@@ -252,7 +252,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
   if (!playbookName || !playId) return;
 
   try {
-    const url = `http5//localhost:5000/playbook/${playbookName}/execute`;
+    const url = `http5//93.127.202.133:5000/playbook/${playbookName}/execute`;
     const payload = { play_id: playId };
 
     const res = await axios.post(url, payload);
@@ -293,7 +293,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
   
       if (sourceNode && targetNode) {
         try {
-          const url = `http5//localhost:5000/playbook/${selectedPlaybook.id}/connect`;
+          const url = `http5//93.127.202.133:5000/playbook/${selectedPlaybook.id}/connect`;
           const payload = {
             parent_description: sourceNode.data.label,
             child_description: targetNode.data.label,
@@ -381,7 +381,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
       // Example of calling some "execute" endpoint
       // Possibly this is not used if you prefer executing the entire playbook
       const response = await axios.post(
-        "http5//localhost:5000/playbook/execute",
+        "http5//93.127.202.133:5000/playbook/execute",
         payload
       );
       console.log("POST Response:", response.data);

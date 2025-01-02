@@ -14,7 +14,7 @@ const RightSideBar = ({
   // Fetch Docker Logs for the Selected Playbook
   const fetchDockerLogs = async () => {
     try {
-      const url = `http://localhost:5000/docker/logs`;
+      const url = `http://93.127.202.133:5000/docker/logs`;
       const response = await axios.get(url);
       setDockerLogs(response.data.logs || []);
     } catch (error) {
@@ -27,7 +27,7 @@ const RightSideBar = ({
   const fetchContextLogs = async () => {
 
     try {
-      const url = `http://localhost:5000/playbook/${selectedPlaybook.id}/global_context_log`;
+      const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/global_context_log`;
       const response = await axios.get(url);
       setContextLogs(response.data.logs || []);
     } catch (error) {

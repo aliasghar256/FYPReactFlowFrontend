@@ -35,6 +35,8 @@ const Content = () => {
   const [selectedEdges, setSelectedEdges] = useState([]);
   const [newIp, setNewIp] = useState("");
   const [refetchTrigger, setRefetchTrigger] = useState(false);
+  const [shouldPollLogs, setShouldPollLogs] = useState(false);
+  const pollingTimer = useRef(null);
 
   const triggerRefetch = () => setRefetchTrigger((prev) => !prev);
 
@@ -240,6 +242,7 @@ useEffect(() => {
       const res = await axios.post(url);
       console.log("Execute Playbook:", res.data);
       alert(`Playbook '${playbookName}' executed!`);
+      startPollingLogs();
     } catch (error) {
       console.error("Error executing playbook:", error);
       alert("Playbook execution failed. See console for details.");
@@ -262,12 +265,29 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
     // Optionally, fetch logs or contexts
     // fetchDockerLogs();
     // fetchContextLogs(playbookName);
+    startPollingLogs();
   } catch (error) {
     console.error("Error executing single play:", error);
     alert("Single-play execution failed. See console for details.");
   }
 };
 
+const startPollingLogs = () => {
+  // If a previous timer is running, clear it first
+  if (pollingTimer.current) {
+    clearInterval(pollingTimer.current);
+    pollingTimer.current = null;
+  }
+
+  // Turn on "shouldPollLogs"
+  setShouldPollLogs(true);
+
+  // Optionally, stop polling after 20 seconds or so
+  pollingTimer.current = setTimeout(() => {
+    setShouldPollLogs(false);   // Stop requesting logs
+    pollingTimer.current = null;
+  }, 20000); // 20 second polling window
+};
 
   // ==============================
   // ReactFlow: onConnect
@@ -555,6 +575,8 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
   <RightSideBar
     selectedPlaybook={selectedPlaybook}
     setSelectedPlaybook={setSelectedPlaybook}
+    shouldPollLogs={shouldPollLogs}      // pass the boolean
+    handleExecuteSinglePlay={handleExecuteSinglePlay}
   />
 </div>
 

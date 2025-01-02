@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useRef  } from "react";
 import axios from "axios";
 
 const RightSideBar = ({
   selectedPlaybook,
   setSelectedPlaybook,
   selectedNode,
+  shouldPollLogs = false,
   executeSinglePlay,
+  handleExecuteSinglePlay,
   removePlay,
 }) => {
   const [dockerLogs, setDockerLogs] = useState([]); // Docker logs
   const [contextLogs, setContextLogs] = useState([]); // Context logs
+  const pollingIntervalRef = useRef(null);
+
 
   // Fetch Docker Logs for the Selected Playbook
   const fetchDockerLogs = async () => {
@@ -36,18 +40,43 @@ const RightSideBar = ({
     }
   };
 
+
+  // Initially fetch logs once if we have a selected playbook
   useEffect(() => {
     if (selectedPlaybook) {
       fetchDockerLogs();
       fetchContextLogs();
-      // console.log("Context Logs: ", contextLogs);
     }
-  }, []);
+  }, [selectedPlaybook]);
 
+  // Whenever shouldPollLogs is true, set up an interval
   useEffect(() => {
-    // console.log("Context Logs: ", contextLogs);
-    
-  }, [contextLogs, dockerLogs]);
+    if (shouldPollLogs) {
+      // Clear any existing interval
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      // Start polling every 3 seconds (example)
+      pollingIntervalRef.current = setInterval(() => {
+        fetchDockerLogs();
+        fetchContextLogs();
+      }, 3000);
+    } else {
+      // If shouldPollLogs is false, clear the interval
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    }
+
+    // Cleanup when unmounting
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [shouldPollLogs]);
 
 
 

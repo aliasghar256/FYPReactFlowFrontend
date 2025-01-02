@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useRef  } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 const RightSideBar = ({
@@ -11,9 +11,8 @@ const RightSideBar = ({
   removePlay,
 }) => {
   const [dockerLogs, setDockerLogs] = useState([]); // Docker logs
-  const [contextLogs, setContextLogs] = useState([]); // Context logs
+  const [contextLogs, setContextLogs] = useState({}); // Context logs mapped by playbooks
   const pollingIntervalRef = useRef(null);
-
 
   // Fetch Docker Logs for the Selected Playbook
   const fetchDockerLogs = async () => {
@@ -29,17 +28,15 @@ const RightSideBar = ({
 
   // Fetch Context Logs
   const fetchContextLogs = async () => {
-
     try {
       const url = `http://93.127.202.133:5000/allplaybooks/global_context_log`;
       const response = await axios.get(url);
-      setContextLogs(response.data.logs || []);
+      setContextLogs(response.data.all_playbooks_global_context_log || {});
     } catch (error) {
       console.error("Error fetching context logs:", error);
-      setContextLogs([]);
+      setContextLogs({});
     }
   };
-
 
   // Initially fetch logs once if we have a selected playbook
   useEffect(() => {
@@ -78,8 +75,6 @@ const RightSideBar = ({
     };
   }, [shouldPollLogs]);
 
-
-
   return (
     <div style={{ width: "300px", background: "#fafafa", padding: "10px" }}>
       <h3>Docker Logs</h3>
@@ -108,28 +103,41 @@ const RightSideBar = ({
       <div
         style={{
           border: "1px solid #999",
-          height: "150px",
+          height: "300px",
           overflow: "auto",
           marginBottom: "10px",
         }}
       >
-        {contextLogs.length > 0 ? (
-          contextLogs.map((c, idx) => (
-            <div key={idx} style={{ fontSize: "0.85rem", marginBottom: "5px" }}>
-              <p>
-                <strong>Play:</strong> {c.play}
-              </p>
-              <p>
-                <strong>Cmd:</strong> {c.command}
-              </p>
-              <pre>{JSON.stringify(c.result, null, 2)}</pre>
-              <pre>{c.context}</pre>
-              <hr />
+        {Object.keys(contextLogs).length > 0 ? (
+          Object.entries(contextLogs).map(([playbookId, logs]) => (
+            <div key={playbookId} style={{ marginBottom: "10px" }}>
+              <h4>Playbook: {playbookId}</h4>
+              {logs.map((log, idx) => (
+                <div
+                  key={idx}
+                  style={{ fontSize: "0.85rem", marginBottom: "5px" }}
+                >
+                  <p>
+                    <strong>Play:</strong> {log.play}
+                  </p>
+                  <p>
+                    <strong>Cmd:</strong> {log.command}
+                  </p>
+                  <pre>
+                    <strong>Result:</strong>{" "}
+                    {JSON.stringify(log.result, null, 2)}
+                  </pre>
+                  <pre>
+                    <strong>Context:</strong> {log.context}
+                  </pre>
+                  <hr />
+                </div>
+              ))}
             </div>
           ))
         ) : (
           <p style={{ fontSize: "0.85rem", color: "#666" }}>
-            No context logs for selected PB
+            No context logs available.
           </p>
         )}
       </div>

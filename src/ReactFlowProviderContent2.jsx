@@ -291,7 +291,7 @@ const startPollingLogs = () => {
   pollingTimer.current = setTimeout(() => {
     setShouldPollLogs(false);   // Stop requesting logs
     pollingTimer.current = null;
-  }, 5000); // 20 second polling window
+  }, 30000); // 20 second polling window
 };
 
   // ==============================

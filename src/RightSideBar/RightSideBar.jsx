@@ -13,10 +13,8 @@ const RightSideBar = ({
 
   // Fetch Docker Logs for the Selected Playbook
   const fetchDockerLogs = async () => {
-    if (!selectedPlaybook) return;
-
     try {
-      const url = `http://93.127.202.133:5000/docker/logs`;
+      const url = `http://localhost:5000/docker/logs`;
       const response = await axios.get(url);
       setDockerLogs(response.data.logs || []);
     } catch (error) {
@@ -27,10 +25,9 @@ const RightSideBar = ({
 
   // Fetch Context Logs
   const fetchContextLogs = async () => {
-    if (!selectedPlaybook) return;
 
     try {
-      const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/global_context_log`;
+      const url = `http://localhost:5000/playbook/${selectedPlaybook.id}/global_context_log`;
       const response = await axios.get(url);
       setContextLogs(response.data.logs || []);
     } catch (error) {
@@ -45,30 +42,17 @@ const RightSideBar = ({
       fetchContextLogs();
       console.log("Context Logs: ", contextLogs);
     }
-  }, [selectedPlaybook,contextLogs, dockerLogs]);
+  }, []);
 
   useEffect(() => {
     console.log("Context Logs: ", contextLogs);
     
   }, [contextLogs, dockerLogs]);
 
-  if (!selectedPlaybook) {
-    return (
-      <div style={{ width: "300px", background: "#fafafa", padding: "10px" }}>
-        <h3>No Playbook Selected</h3>
-        <p style={{ fontSize: "0.85rem", color: "#666" }}>
-          Select a playbook to view details.
-        </p>
-      </div>
-    );
-  }
+
 
   return (
     <div style={{ width: "300px", background: "#fafafa", padding: "10px" }}>
-      {/* Display the selected playbook name */}
-      <h2 style={{ textAlign: "center", color: "#333" }}>
-        {selectedPlaybook.name}
-      </h2>
       <h3>Docker Logs</h3>
       <div
         style={{

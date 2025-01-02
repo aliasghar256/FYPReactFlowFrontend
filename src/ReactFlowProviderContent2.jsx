@@ -423,8 +423,8 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
           >
             <BiSolidDockLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-3xl font-semibold text-gray-700 mb-3">
-            Flow <span className="-ml-1 text-pink-500">Chart</span>
+          <h2 className="text-2xl font-semibold text-gray-700 mb-3">
+            LLM <span className="-ml-1 text-pink-500">Autopentester</span>
           </h2>
           <hr className="my-3" />
 
@@ -502,7 +502,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
         <div className="mt-2 space-y-1">
           {pb.plays?.map((play, idx) => {
             const blockData = {
-              id: `play-${pb.name}-${idx}`,
+              id: play.id,
               description: play.description,
               completed: play.completed,
             };

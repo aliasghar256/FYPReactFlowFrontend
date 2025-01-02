@@ -108,49 +108,54 @@ useEffect(() => {
   const fetchDataAndBuildGraph = async () => {
     const data = await fetchAllPlaybooks();
     console.log("MOUNT USE EFFECT CALLED");
-
+  
     if (data) {
-      // Transform into nodes/edges once
+      // Transform into nodes with playbook_id and play_id
       const transformedNodes = Object.values(data).flatMap((playbook, playbookIndex) =>
         playbook.plays.map((play, playIndex) => ({
           id: play.id,
           position: { x: playIndex * 200, y: playbookIndex * 150 },
-          data: { label: play.description },
+          data: {
+            label: play.description,
+            playbook_id: playbook.id, // Include playbook_id
+            play_id: play.id, // Include play_id
+          },
           style: {
             background: play.completed ? "#A7F3D0" : "#FCA5A5",
             border: "1px solid #333",
           },
         }))
       );
-
+  
       let count = 0;
       const transformedEdges = Object.values(data).flatMap((playbook) =>
         playbook.plays.flatMap((play) => {
           // forward / backward links
-          const forwardEdges = play.forwardLinks?.map((targetId) => ({
-            id: `edge-${play.playbookName}-${play.id}-${targetId}-${count++}`,
-            source: play.id,
-            target: targetId,
-          })) || [];
-
-          const backwardEdges = play.backwardLinks?.map((sourceId) => ({
-            id: `edge-${play.playbookName}-${sourceId}-${play.id}-${count++}`,
-            source: sourceId,
-            target: play.id,
-          })) || [];
-
+          const forwardEdges =
+            play.forwardLinks?.map((targetId) => ({
+              id: `edge-${play.playbookName}-${play.id}-${targetId}-${count++}`,
+              source: play.id,
+              target: targetId,
+            })) || [];
+  
+          const backwardEdges =
+            play.backwardLinks?.map((sourceId) => ({
+              id: `edge-${play.playbookName}-${sourceId}-${play.id}-${count++}`,
+              source: sourceId,
+              target: play.id,
+            })) || [];
+  
           return [...forwardEdges, ...backwardEdges];
         })
       );
-
-      // Set nodes & edges for the graph
+  
       setNodes(transformedNodes);
       addUniqueEdges(transformedEdges);
     }
-
-    // Regardless, update the playbooks list
+  
     setPlaybooks(data || []);
   };
+  
 
   fetchDataAndBuildGraph();
 }, []); // runs only on initial mount
@@ -293,42 +298,32 @@ const startPollingLogs = () => {
   // ReactFlow: onConnect
   // ==============================
   const onConnect = async (params) => {
-    // Add the edge in the local UI
     const newEdge = {
-      id: `edge-${params.source}-${params.target}`, // Unique ID for the edge
+      id: `edge-${params.source}-${params.target}`,
       source: params.source,
       target: params.target,
     };
   
-    // Use addUniqueEdges to avoid duplicate edges
     addUniqueEdges([newEdge]);
-  
-    // Update the node path globally
     updateNodePath();
   
-    // Notify the backend about the connection
-    if (selectedPlaybook) {
-      const sourceNode = nodes.find((n) => n.id === params.source);
-      const targetNode = nodes.find((n) => n.id === params.target);
+    const sourceNode = nodes.find((node) => node.id === params.source);
+    const targetNode = nodes.find((node) => node.id === params.target);
   
-      if (sourceNode && targetNode) {
-        try {
-          const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/connect`;
-          const payload = {
-            parent_description: sourceNode.data.label,
-            child_description: targetNode.data.label,
-          };
-          await axios.post(url, payload);
-          console.log("Connected plays in backend:", payload);
-        } catch (error) {
-          console.error("Error connecting plays in backend:", error);
-        }
+    if (sourceNode && targetNode && selectedPlaybook) {
+      try {
+        const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/connect`;
+        const payload = {
+          parent_description: sourceNode.data.label,
+          child_description: targetNode.data.label,
+        };
+        await axios.post(url, payload);
+        console.log("Connected plays in backend:", payload);
+      } catch (error) {
+        console.error("Error connecting plays in backend:", error);
       }
     }
-  };
-  
-  
-  
+  };  
 
   // ==============================
   // Build the "nodePath" array
@@ -337,17 +332,21 @@ const startPollingLogs = () => {
     const path = [];
     const visited = new Set();
   
-    // Only start from nodes that are "sources" in the edges
     const startNodes = nodes.filter((node) =>
-      edges.some((edge) => edge.source === node.id)
+      edges.some((edge) => edge.source === node.id && !edges.some((e) => e.target === node.id))
     );
   
     const traverse = (nodeId) => {
       if (visited.has(nodeId)) return;
       visited.add(nodeId);
-      path.push(nodeId);
   
-      // Traverse connected children
+      const node = nodes.find((n) => n.id === nodeId);
+      if (node) {
+        const playbookId = node.data.playbook_id;
+        const playId = node.id;
+        path.push({ playbook_id: playbookId, play_id: playId });
+      }
+  
       edges
         .filter((edge) => edge.source === nodeId)
         .forEach((edge) => traverse(edge.target));
@@ -356,6 +355,8 @@ const startPollingLogs = () => {
     startNodes.forEach((node) => traverse(node.id));
     setNodePath(path);
   };
+  
+  
 
   // ==============================
   // onDrop (drag from sidebar => canvas)
@@ -363,48 +364,43 @@ const startPollingLogs = () => {
   const onDrop = (event) => {
     event.preventDefault();
     const reactFlowBounds = ref.current.getBoundingClientRect();
-    const blockData = JSON.parse(
-      event.dataTransfer.getData("application/reactflow")
-    );
-
+    const blockData = JSON.parse(event.dataTransfer.getData("application/reactflow"));
+  
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
     });
-
-    // Make sure each "play" node has a unique ID
-    // e.g. blockData might be { id: 'play-Nmap_test-0', description: '...', completed: ...}
-    // If you drop the same node multiple times, you might need a more unique ID
+  
     const newNode = {
       id: blockData.id,
       position,
-      data: { label: blockData.description },
+      data: {
+        label: blockData.description,
+        playbook_id: blockData.playbook_id, // Include playbook_id
+      },
       style: {
         background: blockData.completed ? "#A7F3D0" : "#FCA5A5",
         border: "1px solid #333",
       },
     };
-
+  
     setNodes((nds) => [...nds, newNode]);
   };
+  
 
   // (Optional) Execute Node Path
   const handleExecuteNodePath = async () => {
     const payload = {
-      nodePath: nodePath.map((nodeId) => ({
-        id: nodeId,
-        description: nodes.find((n) => n.id === nodeId)?.data.label || "",
-      })),
+      plays: nodePath, // Contains `playbook_id` and `play_id`
     };
+  
     console.log("handleExecuteNodePath called Node path payload:", payload);
+  
     try {
-      // Example of calling some "execute" endpoint
-      // Possibly this is not used if you prefer executing the entire playbook
       const response = await axios.post(
         "http://93.127.202.133:5000/execute_node_path",
         payload
       );
-      // console.log("handleExecuteNodePath ",payload);
       console.log("POST Response:", response.data);
       alert("Execution via node path successful!");
     } catch (error) {
@@ -412,7 +408,6 @@ const startPollingLogs = () => {
       alert("Execution failed!");
     }
   };
-
   // ==============================
   // Render
   // ==============================
@@ -582,26 +577,31 @@ const startPollingLogs = () => {
 </div>
 
 {/* Node Path Overlay */}
+{/* Node Path Overlay */}
 <div
-          className="fixed bottom-4 left-50 bg-white border rounded shadow-lg p-4 z-40"
-          style={{ width: "500px", maxHeight: "135px", overflowY: "auto" }}
-        >
-          <h3 className="text-lg font-bold mb-4">Node Path</h3>
-          <div className="text-sm text-gray-700 mb-4">
-            <pre className="whitespace-pre-wrap">
-              {'{'}
-              {nodePath.map((nodeId, index) => {
-                const nodeLabel = nodes.find((n) => n.id === nodeId)?.data.label;
-                return (
-                  <div key={index}>
-                    &nbsp;&nbsp;{index + 1}: "{nodeLabel}",
-                  </div>
-                );
-              })}
-              {'}'}
-            </pre>
-          </div>
+  className="fixed bottom-4 left-50 bg-white border rounded shadow-lg p-4 z-40"
+  style={{ width: "500px", maxHeight: "135px", overflowY: "auto" }}
+>
+  <h3 className="text-lg font-bold mb-4">Node Path</h3>
+  <div className="text-sm text-gray-700 mb-4">
+    <pre className="whitespace-pre-wrap">
+      {"{"}
+      {nodePath.map((node, index) => (
+        <div key={index}>
+          &nbsp;&nbsp;{index + 1}: 
+          {" {"}
+          <span>
+            <strong>Playbook ID:</strong> {node.playbook_id}, 
+            <strong> Play ID:</strong> {node.play_id}
+          </span>
+          {" }"}
         </div>
+      ))}
+      {"}"}
+    </pre>
+  </div>
+</div>
+
 
         {/* Controls Overlay */}
         <div className="fixed bottom-4 left-[750px] z-50 pointer-events-auto">

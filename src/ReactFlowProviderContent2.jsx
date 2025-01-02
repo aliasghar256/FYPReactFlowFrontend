@@ -291,7 +291,7 @@ const startPollingLogs = () => {
   pollingTimer.current = setTimeout(() => {
     setShouldPollLogs(false);   // Stop requesting logs
     pollingTimer.current = null;
-  }, 20000); // 20 second polling window
+  }, 5000); // 20 second polling window
 };
 
   // ==============================
@@ -403,6 +403,7 @@ const startPollingLogs = () => {
       );
       console.log("POST Response:", response.data);
       alert("Execution via node path successful!");
+      setShouldPollLogs(true); // Start polling logs
     } catch (error) {
       console.error("Error during node path execution:", error);
       alert("Execution failed!");
@@ -576,7 +577,6 @@ const startPollingLogs = () => {
   />
 </div>
 
-{/* Node Path Overlay */}
 {/* Node Path Overlay */}
 <div
   className="fixed bottom-4 left-50 bg-white border rounded shadow-lg p-4 z-40"

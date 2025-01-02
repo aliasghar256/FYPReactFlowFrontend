@@ -31,7 +31,7 @@ const RightSideBar = ({
   const fetchContextLogs = async () => {
 
     try {
-      const url = `http://93.127.202.133:5000/playbook/${selectedPlaybook.id}/global_context_log`;
+      const url = `http://93.127.202.133:5000/allplaybooks/global_context_log`;
       const response = await axios.get(url);
       setContextLogs(response.data.logs || []);
     } catch (error) {

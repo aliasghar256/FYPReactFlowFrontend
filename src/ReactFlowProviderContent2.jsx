@@ -236,7 +236,7 @@ useEffect(() => {
   const handleExecutePlaybook = async (playbookName) => {
     try {
       // Example: POST /playbook/<playbookName>/execute_all
-      const url = `http5//93.127.202.133:5000/playbook/${playbookName}/execute_all`;
+      const url = `http//93.127.202.133:5000/playbook/${playbookName}/execute_all`;
       const res = await axios.post(url);
       console.log("Execute Playbook:", res.data);
       alert(`Playbook '${playbookName}' executed!`);

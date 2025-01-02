@@ -255,7 +255,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
   if (!playbookName || !playId) return;
 
   try {
-    const url = `http://93.127.202.133:5000/playbook/${playbookName}/execute`;
+    const url = `http://93.127.202.133:5000/playbook/${playbookName}/execute_node_path`;
     const payload = { play_id: playId };
 
     const res = await axios.post(url, payload);

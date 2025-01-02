@@ -57,7 +57,7 @@ const onSelectionChange = useCallback(({ nodes, edges }) => {
     setEdges((prevEdges) => {
       const existingEdgeIds = new Set(prevEdges.map((edge) => edge.id));
       const filteredEdges = newEdges.filter((edge) => !existingEdgeIds.has(edge.id));
-      console.log("Adding unique edges:", filteredEdges);
+      // console.log("Adding unique edges:", filteredEdges);
       return [...prevEdges, ...filteredEdges];
     });
   };
@@ -80,69 +80,79 @@ const onSelectionChange = useCallback(({ nodes, edges }) => {
       const updatedEdges = prevEdges.filter(
         (edge) => !edgesToDelete.some((deletedEdge) => deletedEdge.id === edge.id)
       );
-      console.log("Edges after deletion:", updatedEdges); // Debugging log
+      // console.log("Edges after deletion:", updatedEdges); // Debugging log
       return updatedEdges;
     });
   };
   
-  useEffect(() => {
-    // This effect re-renders the component whenever refetchTrigger changes
-  }, [refetchTrigger]);
+  // 2) On RE-FETCH: update only the playbook list, not the graph
+useEffect(() => {
+  const fetchPlaybooksOnly = async () => {
+    try {
+      const data = await fetchAllPlaybooks();
+      setPlaybooks(data || []);
+    } catch (error) {
+      console.error("Error fetching updated playbooks:", error);
+    }
+  };
+
+  fetchPlaybooksOnly();
+}, [refetchTrigger]);
+
   
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await fetchAllPlaybooks(); // Fetch playbooks from backend
-  
-      if (data) {
-        // Transform plays into nodes
-        const transformedNodes = Object.values(data).flatMap((playbook, playbookIndex) =>
-          playbook.plays.map((play, playIndex) => ({
-            id: play.id, // Unique ID for each play
-            position: { x: playIndex * 200, y: playbookIndex * 150 }, // Example positioning logic
-            data: { label: play.description }, // Set label to play description
-            style: {
-              background: play.completed ? "#A7F3D0" : "#FCA5A5", // Color nodes based on completion
-              border: "1px solid #333",
-            },
-          }))
-        );
-  
-        // Transform forward and backward links into edges
-        let count = 0; // Initialize counter for unique edge IDs
-        const transformedEdges = Object.values(data).flatMap((playbook) =>
-          playbook.plays.flatMap((play) => {
-            // Generate forward links
-            const forwardEdges = play.forwardLinks?.map((targetId) => ({
-              id: `edge-${play.playbookName}-${play.id}-${targetId}-${count++}`,
-              source: play.id,
-              target: targetId,
-            })) || [];
-  
-            // Generate backward links
-            const backwardEdges = play.backwardLinks?.map((sourceId) => ({
-              id: `edge-${play.playbookName}-${sourceId}-${play.id}-${count++}`,
-              source: sourceId,
-              target: play.id,
-            })) || [];
-  
-            return [...forwardEdges, ...backwardEdges];
-          })
-        );
-  
-        setNodes(transformedNodes); // Update nodes state
-        console.log("Transformed Nodes:", transformedNodes);
-        console.log("Transformed Edges:", transformedEdges);
-  
-        // Use addUniqueEdges to ensure no duplicate edges are added
-        addUniqueEdges(transformedEdges);
-      }
-  
-      setPlaybooks(data || []); // Optionally set the raw playbooks data
-    };
-  
-    fetchData();
-  }, []); // Run only once on component mount
+  // 1) On MOUNT: fetch & build the initial nodes and edges
+useEffect(() => {
+  const fetchDataAndBuildGraph = async () => {
+    const data = await fetchAllPlaybooks();
+    console.log("MOUNT USE EFFECT CALLED");
+
+    if (data) {
+      // Transform into nodes/edges once
+      const transformedNodes = Object.values(data).flatMap((playbook, playbookIndex) =>
+        playbook.plays.map((play, playIndex) => ({
+          id: play.id,
+          position: { x: playIndex * 200, y: playbookIndex * 150 },
+          data: { label: play.description },
+          style: {
+            background: play.completed ? "#A7F3D0" : "#FCA5A5",
+            border: "1px solid #333",
+          },
+        }))
+      );
+
+      let count = 0;
+      const transformedEdges = Object.values(data).flatMap((playbook) =>
+        playbook.plays.flatMap((play) => {
+          // forward / backward links
+          const forwardEdges = play.forwardLinks?.map((targetId) => ({
+            id: `edge-${play.playbookName}-${play.id}-${targetId}-${count++}`,
+            source: play.id,
+            target: targetId,
+          })) || [];
+
+          const backwardEdges = play.backwardLinks?.map((sourceId) => ({
+            id: `edge-${play.playbookName}-${sourceId}-${play.id}-${count++}`,
+            source: sourceId,
+            target: play.id,
+          })) || [];
+
+          return [...forwardEdges, ...backwardEdges];
+        })
+      );
+
+      // Set nodes & edges for the graph
+      setNodes(transformedNodes);
+      addUniqueEdges(transformedEdges);
+    }
+
+    // Regardless, update the playbooks list
+    setPlaybooks(data || []);
+  };
+
+  fetchDataAndBuildGraph();
+}, []); // runs only on initial mount
+ // Run only once on component mount
   
   const deduplicateEdges = (edges) => {
     const edgeMap = new Map();
@@ -183,14 +193,12 @@ useEffect(() => {
   const createNewPlaybook = async () => {
     if (!newPlaybookName || !newPlaybookCategory) return;
     try {
-      const payload = {
-        name: newPlaybookName,
-        category: newPlaybookCategory,
-      };
-      // POST /playbook
+      const payload = { name: newPlaybookName, category: newPlaybookCategory };
       await axios.post("http//localhost:5000/playbook", payload);
-      await fetchAllPlaybooks();
+      
+      // Instead of calling fetchAllPlaybooks again, just trigger a re-fetch
       triggerRefetch();
+  
       setNewPlaybookName("");
       setNewPlaybookCategory("");
       alert("Playbook created successfully!");
@@ -199,6 +207,7 @@ useEffect(() => {
       alert("Failed to create playbook. Check console for details.");
     }
   };
+  
 
   // ==============================
   // Add a new play to the selected playbook
@@ -209,16 +218,17 @@ useEffect(() => {
       const payload = { description: newPlayDescription };
       const url = `http//localhost:5000/playbook/${selectedPlaybook.id}/create-play`;
       await axios.post(url, payload);
-      await fetchAllPlaybooks(); // Refresh playbooks
-      triggerRefetch(); // Force a re-render
-      setNewPlayDescription(""); // Clear input
+  
+      // Again, just rely on triggerRefetch()
+      triggerRefetch();
+  
+      setNewPlayDescription("");
       alert("Play added successfully!");
     } catch (error) {
       console.error("Error adding new play:", error);
       alert("Failed to add play. See console for details.");
     }
   };
-
   
   // ==============================
   // Execute a given playbook
@@ -366,7 +376,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
         description: nodes.find((n) => n.id === nodeId)?.data.label || "",
       })),
     };
-    console.log("Node path payload:", payload);
+    // console.log("Node path payload:", payload);
     try {
       // Example of calling some "execute" endpoint
       // Possibly this is not used if you prefer executing the entire playbook

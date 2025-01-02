@@ -57,9 +57,9 @@ export const serializePlaybooks = (playbooks) => {
 export const fetchAllPlaybooks = async () => {
   try {
     const res = await axios.get("http://localhost:5000/allplaybooks");
-    console.log("Res Data: " + JSON.stringify(res.data, null, 2)); // Pretty-print JSON
+    // console.log("Res Data: " + JSON.stringify(res.data, null, 2)); // Pretty-print JSON
     const playbooks = deserializePlaybooks(res.data); // Deserialize response
-    console.log("Deserialized Playbooks from from fetchfunct:", playbooks); // Log for debugging
+    // console.log("Deserialized Playbooks from from fetchfunct:", playbooks); // Log for debugging
     return playbooks; // Return the deserialized playbooks
   } catch (error) {
     console.error("Error fetching playbooks:", error);

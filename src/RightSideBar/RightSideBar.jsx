@@ -40,12 +40,12 @@ const RightSideBar = ({
     if (selectedPlaybook) {
       fetchDockerLogs();
       fetchContextLogs();
-      console.log("Context Logs: ", contextLogs);
+      // console.log("Context Logs: ", contextLogs);
     }
   }, []);
 
   useEffect(() => {
-    console.log("Context Logs: ", contextLogs);
+    // console.log("Context Logs: ", contextLogs);
     
   }, [contextLogs, dockerLogs]);
 

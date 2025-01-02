@@ -396,7 +396,7 @@ const startPollingLogs = () => {
         description: nodes.find((n) => n.id === nodeId)?.data.label || "",
       })),
     };
-    // console.log("Node path payload:", payload);
+    console.log("handleExecuteNodePath called Node path payload:", payload);
     try {
       // Example of calling some "execute" endpoint
       // Possibly this is not used if you prefer executing the entire playbook
@@ -404,6 +404,7 @@ const startPollingLogs = () => {
         "http://93.127.202.133:5000/execute_node_path",
         payload
       );
+      // console.log("handleExecuteNodePath ",payload);
       console.log("POST Response:", response.data);
       alert("Execution via node path successful!");
     } catch (error) {

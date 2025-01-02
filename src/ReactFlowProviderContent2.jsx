@@ -401,7 +401,7 @@ const startPollingLogs = () => {
       // Example of calling some "execute" endpoint
       // Possibly this is not used if you prefer executing the entire playbook
       const response = await axios.post(
-        "http://93.127.202.133:5000/playbook/execute",
+        "http://93.127.202.133:5000/execute_node_path",
         payload
       );
       console.log("POST Response:", response.data);

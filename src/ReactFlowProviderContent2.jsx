@@ -14,7 +14,7 @@ import { BiSolidDockLeft } from "react-icons/bi";
 import { useGlobalContext } from "./context";
 import {deserializePlaybooks, serializePlaybooks, fetchAllPlaybooks} from "./Playbook/PlaybookManager";
 import RightSideBar from "./RightSideBar/RightSideBar";
-
+//Stable 2
 const Content = () => {
   const { isSidebarOpen, closeSidebar } = useGlobalContext();
 
@@ -355,8 +355,17 @@ const startPollingLogs = () => {
     startNodes.forEach((node) => traverse(node.id));
     setNodePath(path);
   };
+
+  const getPlayAndPlaybookNames = (playbookId, playId) => {
+    const playbook = playbooks.find((pb) => pb.id === playbookId);
+    if (!playbook) return { playbookName: "Unknown Playbook", playName: "Unknown Play" };
   
-  
+    const play = playbook.plays.find((p) => p.id === playId);
+    return {
+      playbookName: playbook.name || "Unnamed Playbook",
+      playName: play?.description || "Unnamed Play",
+    };
+  };  
 
   // ==============================
   // onDrop (drag from sidebar => canvas)
@@ -580,27 +589,31 @@ const startPollingLogs = () => {
 {/* Node Path Overlay */}
 <div
   className="fixed bottom-4 left-50 bg-white border rounded shadow-lg p-4 z-40"
-  style={{ width: "500px", maxHeight: "135px", overflowY: "auto" }}
+  style={{ width: "500px", maxHeight: "160px", overflowY: "auto" }}
 >
   <h3 className="text-lg font-bold mb-4">Node Path</h3>
   <div className="text-sm text-gray-700 mb-4">
     <pre className="whitespace-pre-wrap">
       {"{"}
-      {nodePath.map((node, index) => (
-        <div key={index}>
-          &nbsp;&nbsp;{index + 1}: 
-          {" {"}
-          <span>
-            <strong>Playbook ID:</strong> {node.playbook_id}, 
-            <strong> Play ID:</strong> {node.play_id}
-          </span>
-          {" }"}
-        </div>
-      ))}
+      {nodePath.map((node, index) => {
+        const { playbookName, playName } = getPlayAndPlaybookNames(node.playbook_id, node.play_id);
+        return (
+          <div key={index}>
+            &nbsp;&nbsp;{index + 1}: 
+            {" {"}
+            <span>
+              <strong>Playbook:</strong> {playbookName}, 
+              <strong> Play:</strong> {playName}
+            </span>
+            {" }"}
+          </div>
+        );
+      })}
       {"}"}
     </pre>
   </div>
 </div>
+
 
 
         {/* Controls Overlay */}
@@ -639,4 +652,3 @@ const ReactFlowProviderContent2 = () => {
 };
 
 export default ReactFlowProviderContent2;
-//stable 1

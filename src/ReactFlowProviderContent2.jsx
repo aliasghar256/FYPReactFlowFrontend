@@ -41,10 +41,10 @@ const Content = () => {
 
 
 // This will be called automatically whenever the selection changes in the React Flow canvas
-const onSelectionChange = useCallback(({ nodes, edges }) => {
-  setSelectedNodes(nodes || []);
-  setSelectedEdges(edges || []);
-}, []);
+  const onSelectionChange = useCallback(({ nodes, edges }) => {
+    setSelectedNodes(nodes || []);
+    setSelectedEdges(edges || []);
+  }, []);
 
 
   const ref = useRef(null);
@@ -560,7 +560,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
 
 {/* Node Path Overlay */}
 <div
-          className="fixed bottom-4 left-4 bg-white border rounded shadow-lg p-4 z-40"
+          className="fixed bottom-4 left-50 bg-white border rounded shadow-lg p-4 z-40"
           style={{ width: "500px", maxHeight: "135px", overflowY: "auto" }}
         >
           <h3 className="text-lg font-bold mb-4">Node Path</h3>
@@ -581,7 +581,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
         </div>
 
         {/* Controls Overlay */}
-        <div className="fixed bottom-4 left-[520px] z-50 pointer-events-auto">
+        <div className="fixed bottom-4 left-[750px] z-50 pointer-events-auto">
           <Controls />
         </div>
 

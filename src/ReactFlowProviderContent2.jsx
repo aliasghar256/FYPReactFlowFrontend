@@ -479,7 +479,7 @@ const handleExecuteSinglePlay = async (playbookName, playId) => {
       <div key={i} className="border p-2 rounded">
         {/* Playbook Header */}
         <div className="flex items-center justify-between mb-1">
-          <strong>{pb.id}</strong>
+          <strong>{pb.name}</strong>
           <button
             onClick={() => handleExecutePlaybook(pb.id)}
             className="text-sm bg-green-500 text-white px-2 py-0.5 rounded hover:bg-green-600"

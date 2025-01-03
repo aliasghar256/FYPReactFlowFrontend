@@ -14,6 +14,8 @@ import { BiSolidDockLeft } from "react-icons/bi";
 import { useGlobalContext } from "./context";
 import {deserializePlaybooks, serializePlaybooks, fetchAllPlaybooks} from "./Playbook/PlaybookManager";
 import RightSideBar from "./RightSideBar/RightSideBar";
+
+import NodePath from "./NodePath";
 //Stable 2
 const Content = () => {
   const { isSidebarOpen, closeSidebar } = useGlobalContext();
@@ -37,6 +39,8 @@ const Content = () => {
   const [refetchTrigger, setRefetchTrigger] = useState(false);
   const [shouldPollLogs, setShouldPollLogs] = useState(false);
   const pollingTimer = useRef(null);
+  const [nodePathVersion, setNodePathVersion] = useState(0);
+
 
   const triggerRefetch = () => setRefetchTrigger((prev) => !prev);
 
@@ -87,19 +91,104 @@ const Content = () => {
     });
   };
   
-  // 2) On RE-FETCH: update only the playbook list, not the graph
-useEffect(() => {
-  const fetchPlaybooksOnly = async () => {
-    try {
-      const data = await fetchAllPlaybooks();
-      setPlaybooks(data || []);
-    } catch (error) {
-      console.error("Error fetching updated playbooks:", error);
-    }
-  };
+// Compare fetched playbooks to existing nodes/edges and add any new ones
+function updateLocalGraphWithNewData(fetchedData, existingNodes, existingEdges) {
+  const newNodes = [];
+  const newEdges = [];
 
-  fetchPlaybooksOnly();
-}, [refetchTrigger]);
+  // We can keep a quick lookup of local nodes by ID
+  const existingNodeIds = new Set(existingNodes.map((n) => n.id));
+  // Similarly for edges
+  const existingEdgeIds = new Set(existingEdges.map((e) => e.id));
+
+  let edgeCount = existingEdgeIds.size; 
+  // (not crucial, but used to generate a unique edge ID if you like)
+
+  // Loop over each playbook
+  Object.values(fetchedData).forEach((playbook) => {
+    // Loop over each play in the playbook
+    playbook.plays.forEach((play) => {
+      // If this play’s ID doesn’t exist in our local nodes, create it
+      if (!existingNodeIds.has(play.id)) {
+        newNodes.push({
+          id: play.id,
+          data: {
+            label: play.description,
+            playbook_id: playbook.id, 
+            play_id: play.id,
+          },
+          position: { x: 100, y: 100 }, // some default position
+          style: {
+            background: play.completed ? "#A7F3D0" : "#FCA5A5",
+            border: "1px solid #333",
+          },
+        });
+      }
+
+      // Now handle edges:
+      // For each forwardLink => add an edge from current play to the target
+      play.forwardLinks?.forEach((targetId) => {
+        const edgeId = `edge-${play.playbookName}-${play.id}-${targetId}-${edgeCount++}`;
+        if (!existingEdgeIds.has(edgeId)) {
+          newEdges.push({
+            id: edgeId,
+            source: play.id,
+            target: targetId,
+          });
+        }
+      });
+
+      // For each backwardLink => add an edge from the sourceId to current play
+      play.backwardLinks?.forEach((sourceId) => {
+        const edgeId = `edge-${play.playbookName}-${sourceId}-${play.id}-${edgeCount++}`;
+        if (!existingEdgeIds.has(edgeId)) {
+          newEdges.push({
+            id: edgeId,
+            source: sourceId,
+            target: play.id,
+          });
+        }
+      });
+    });
+  });
+
+  return { newNodes, newEdges };
+}
+
+
+  // 2) On RE-FETCH: update only the playbook list, not the graph
+  useEffect(() => {
+    const fetchPlaybooksOnly = async () => {
+      try {
+        const data = await fetchAllPlaybooks();
+        setPlaybooks(data || []);
+  
+        if (!data) return;
+  
+        // Compare the newly fetched data with existing nodes/edges
+        const { newNodes, newEdges } = updateLocalGraphWithNewData(
+          data,
+          nodes,  // from useNodesState
+          edges   // from useEdgesState
+        );
+  
+        // If there are new nodes, add them to the existing nodes
+        if (newNodes.length > 0) {
+          setNodes((prev) => [...prev, ...newNodes]);
+        }
+  
+        // If there are new edges, add them
+        if (newEdges.length > 0) {
+          setEdges((prev) => [...prev, ...newEdges]);
+        }
+      } catch (error) {
+        console.error("Error fetching updated playbooks:", error);
+      }
+    };
+  
+    fetchPlaybooksOnly();
+  }, [refetchTrigger]);
+  
 
   
 
@@ -323,6 +412,7 @@ const startPollingLogs = () => {
         console.error("Error connecting plays in backend:", error);
       }
     }
+    setNodePathVersion((prev) => prev + 1);
   };  
 
   // ==============================
@@ -358,6 +448,7 @@ const startPollingLogs = () => {
 
   const getPlayAndPlaybookNames = (playbookId, playId) => {
     const playbook = playbooks.find((pb) => pb.id === playbookId);
+    console.log("Finding "+playbookId+" in "+playbooks);
     if (!playbook) return { playbookName: "Unknown Playbook", playName: "Unknown Play" };
   
     const play = playbook.plays.find((p) => p.id === playId);
@@ -587,33 +678,12 @@ const startPollingLogs = () => {
 </div>
 
 {/* Node Path Overlay */}
-<div
-  className="fixed bottom-4 left-50 bg-white border rounded shadow-lg p-4 z-40"
-  style={{ width: "500px", maxHeight: "160px", overflowY: "auto" }}
->
-  <h3 className="text-lg font-bold mb-4">Node Path</h3>
-  <div className="text-sm text-gray-700 mb-4">
-    <pre className="whitespace-pre-wrap">
-      {"{"}
-      {nodePath.map((node, index) => {
-        const { playbookName, playName } = getPlayAndPlaybookNames(node.playbook_id, node.play_id);
-        return (
-          <div key={index}>
-            &nbsp;&nbsp;{index + 1}: 
-            {" {"}
-            <span>
-              <strong>Playbook:</strong> {playbookName}, 
-              <strong> Play:</strong> {playName}
-            </span>
-            {" }"}
-          </div>
-        );
-      })}
-      {"}"}
-    </pre>
-  </div>
-</div>
-
+    <NodePath
+      playbooks={playbooks} // Array of playbooks
+      nodePath={nodePath} // Array of nodes in the path
+      getPlayAndPlaybookNames={getPlayAndPlaybookNames} // Function to get names
+      version={nodePathVersion} // Dependency to force re-render
+    />
 
 
         {/* Controls Overlay */}

@@ -572,7 +572,7 @@ const startPollingLogs = () => {
 
           {/* SET TARGET IP */}
     <div className="mb-4 bg-gray-100 p-3 rounded">
-      <h3 className="font-bold mb-2">Set Target IP</h3>
+      <h3 className="font-bold mb-2">Set Target</h3>
       <input
         type="text"
         placeholder="IP Address"
